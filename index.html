@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a5f4a">
+  <meta name="description" content="Registro de incidencias en campo con Outbox offline y Background Sync">
+  <title>PWA Outbox - Registro de Incidencias</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icons/icon-192.png" type="image/png">
+</head>
+<body>
+  <header class="cabecera">
+    <div class="cabecera-texto">
+      <h1>Registro de Incidencias en Campo</h1>
+      <p class="subtitulo">Cola Outbox con IndexedDB y sincronización en segundo plano</p>
+    </div>
+    <span id="badge-red" class="badge online" role="status" aria-live="polite">En línea</span>
+  </header>
+
+  <main>
+    <p id="mensaje-estado" class="mensaje-estado" role="status" aria-live="polite" hidden></p>
+
+    <section class="panel" aria-labelledby="titulo-formulario">
+      <h2 id="titulo-formulario">Nueva incidencia</h2>
+      <form id="form-incidencia" novalidate>
+        <label for="titulo">Título</label>
+        <input
+          type="text"
+          id="titulo"
+          name="titulo"
+          maxlength="120"
+          placeholder="Ej. Falla en válvula 4"
+          required
+          autocomplete="off"
+        >
+
+        <label for="descripcion">Descripción</label>
+        <textarea
+          id="descripcion"
+          name="descripcion"
+          rows="4"
+          maxlength="1000"
+          placeholder="Detalle técnico de la incidencia..."
+          required
+        ></textarea>
+
+        <button type="submit" id="btn-enviar">Enviar reporte</button>
+      </form>
+    </section>
+
+    <section class="panel" aria-labelledby="titulo-outbox">
+      <div class="cabecera-lista">
+        <h2 id="titulo-outbox">Bandeja de salida (IndexedDB)</h2>
+        <button id="btn-purgar" type="button">Purgar sincronizados</button>
+      </div>
+      <ul id="lista-outbox" class="lista-outbox"></ul>
+    </section>
+  </main>
+
+  <footer class="pie">
+    <p>PWA práctica Temas 5.1 · 5.2 · 5.3 — JavaScript Vanilla con promesas explícitas</p>
+  </footer>
+
+  <script src="./db-helper.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

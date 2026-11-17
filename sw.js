@@ -1,6 +1,6 @@
 importScripts('./db-helper.js');
 
-var CACHE_STATIC_NAME = 'static-outbox-v2';
+var CACHE_STATIC_NAME = 'static-outbox-v3';
 var ENDPOINT_API = 'https://jsonplaceholder.typicode.com/posts';
 var TAG_SYNC = 'sync-reportes';
 

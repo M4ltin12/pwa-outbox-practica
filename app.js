@@ -38,9 +38,19 @@ function mostrarMensaje(texto, tipo) {
 
 function actualizarIndicadorRed() {
   var enLinea = navigator.onLine;
-  badgeRed.textContent = enLinea ? 'En línea' : 'Sin conexión';
+  badgeRed.textContent = enLinea ? 'Conectado' : 'Sin conexión';
   badgeRed.classList.toggle('online', enLinea);
   badgeRed.classList.toggle('offline', !enLinea);
+}
+
+function etiquetaEstado(estado) {
+  if (estado === 'pendiente') {
+    return 'Pendiente';
+  }
+  if (estado === 'sincronizado') {
+    return 'Sincronizado';
+  }
+  return estado || '';
 }
 
 function formatearFecha(epochMs) {
@@ -67,7 +77,7 @@ function renderizarColaOutbox() {
       if (!registros || registros.length === 0) {
         var vacio = document.createElement('li');
         vacio.className = 'lista-vacia';
-        vacio.textContent = 'No hay reportes en la bandeja de salida.';
+        vacio.textContent = 'Todavía no hay reportes.';
         listaOutbox.appendChild(vacio);
         return;
       }
@@ -89,24 +99,13 @@ function renderizarColaOutbox() {
 
           var estado = document.createElement('span');
           estado.className = 'estado ' + (item.estado || '');
-          estado.textContent = item.estado || 'desconocido';
+          estado.textContent = etiquetaEstado(item.estado);
 
           var fecha = document.createElement('span');
-          fecha.textContent = 'Creado: ' + formatearFecha(item.fechaCreacion);
-
-          var idSpan = document.createElement('span');
-          idSpan.textContent = 'ID: ' + item.id;
+          fecha.textContent = formatearFecha(item.fechaCreacion);
 
           meta.appendChild(estado);
           meta.appendChild(fecha);
-          meta.appendChild(idSpan);
-
-          if (item.fechaSincronizacion) {
-            var syncFecha = document.createElement('span');
-            syncFecha.textContent =
-              'Sincronizado: ' + formatearFecha(item.fechaSincronizacion);
-            meta.appendChild(syncFecha);
-          }
 
           li.appendChild(titulo);
           li.appendChild(meta);
@@ -115,10 +114,7 @@ function renderizarColaOutbox() {
     })
     .catch(function (error) {
       console.error('[UI] Error al leer IndexedDB:', error);
-      mostrarMensaje(
-        'No se pudo leer la bandeja local (IndexedDB).',
-        'error'
-      );
+      mostrarMensaje('No se pudieron cargar los reportes.', 'error');
     });
 }
 
@@ -208,10 +204,7 @@ function procesarEnvioReporte(titulo, descripcion) {
       return guardarRegistro(registro)
         .then(function (id) {
           if (resultadoHttp.exitoHttp) {
-            mostrarMensaje(
-              'Reporte enviado y guardado como sincronizado (ID ' + id + ').',
-              'ok'
-            );
+            mostrarMensaje('Reporte guardado.', 'ok');
             return id;
           }
 
@@ -222,9 +215,7 @@ function procesarEnvioReporte(titulo, descripcion) {
               id
           );
           mostrarMensaje(
-            'Sin respuesta del servidor. Reporte guardado como pendiente (ID ' +
-              id +
-              ').',
+            'Sin conexión. El reporte quedó guardado en este dispositivo.',
             'aviso'
           );
 
@@ -239,10 +230,7 @@ function procesarEnvioReporte(titulo, descripcion) {
         })
         .catch(function (errorBd) {
           console.error('[Outbox] Error de IndexedDB (no es fallo de red):', errorBd);
-          mostrarMensaje(
-            'El envío o el intento local falló al guardar en IndexedDB.',
-            'error'
-          );
+          mostrarMensaje('No se pudo guardar el reporte.', 'error');
           throw errorBd;
         });
     })
@@ -277,6 +265,8 @@ function sincronizarPendientesFallback() {
         console.log('[Outbox] No hay pendientes.');
         return { ok: 0, fail: 0 };
       }
+
+      mostrarMensaje('Enviando reportes pendientes...', 'ok');
 
       var envios = pendientes.map(function (item) {
         return fetch(ENDPOINT_API, {
@@ -320,25 +310,18 @@ function sincronizarPendientesFallback() {
     .then(function (resumen) {
       if (resumen && resumen.fail > 0) {
         mostrarMensaje(
-          'Sincronizados ' +
-            resumen.ok +
-            '; ' +
-            resumen.fail +
-            ' pendiente(s) se conservan tras fallo HTTP.',
+          'No se pudo enviar el reporte. Se intentará de nuevo.',
           'aviso'
         );
       } else if (resumen && resumen.ok > 0) {
-        mostrarMensaje(
-          'Fallback sincronizó ' + resumen.ok + ' pendiente(s).',
-          'ok'
-        );
+        mostrarMensaje('Los reportes se enviaron correctamente.', 'ok');
       }
       return renderizarColaOutbox();
     })
     .catch(function (error) {
       console.error('[Outbox] Error en sincronización fallback:', error);
       mostrarMensaje(
-        'Error al sincronizar pendientes. Los no confirmados se conservan.',
+        'No se pudo enviar el reporte. Se intentará de nuevo.',
         'aviso'
       );
       return renderizarColaOutbox();
@@ -362,7 +345,7 @@ function purgarSincronizados() {
       });
 
       if (sincronizados.length === 0) {
-        mostrarMensaje('No hay registros sincronizados para purgar.', 'aviso');
+        mostrarMensaje('No hay enviados para eliminar.', 'aviso');
         return;
       }
 
@@ -371,10 +354,7 @@ function purgarSincronizados() {
       });
 
       return Promise.all(borrados).then(function () {
-        mostrarMensaje(
-          'Se purgaron ' + sincronizados.length + ' registro(s) sincronizado(s). Los pendientes se conservan.',
-          'ok'
-        );
+        mostrarMensaje('Enviados eliminados.', 'ok');
       });
     })
     .then(function () {
@@ -382,7 +362,7 @@ function purgarSincronizados() {
     })
     .catch(function (error) {
       console.error('[UI] Error al purgar:', error);
-      mostrarMensaje('No se pudo purgar la bandeja (IndexedDB).', 'error');
+      mostrarMensaje('No se pudo eliminar.', 'error');
     });
 }
 
@@ -414,7 +394,7 @@ function inicializarEscuchaMensajesSW() {
       console.log(
         '[UI] Confirmación del SW (OUTBOX_SINCRONIZADO). Actualizando bandeja...'
       );
-      mostrarMensaje('El Service Worker sincronizó pendientes.', 'ok');
+      mostrarMensaje('Los reportes se enviaron correctamente.', 'ok');
       renderizarColaOutbox();
     }
   });
@@ -427,7 +407,7 @@ formIncidencia.addEventListener('submit', function (event) {
   var descripcion = (inputDescripcion.value || '').trim();
 
   if (!titulo || !descripcion) {
-    mostrarMensaje('Completa título y descripción.', 'aviso');
+    mostrarMensaje('Escribe un título y una descripción.', 'aviso');
     return;
   }
 
@@ -464,10 +444,6 @@ window.addEventListener('online', function () {
 
 window.addEventListener('offline', function () {
   actualizarIndicadorRed();
-  mostrarMensaje(
-    'Sin conexión. Los nuevos reportes se guardarán como pendientes.',
-    'aviso'
-  );
 });
 
 actualizarIndicadorRed();

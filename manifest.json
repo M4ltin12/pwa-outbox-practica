@@ -1,13 +1,13 @@
 {
-  "name": "Registro de Incidencias en Campo",
-  "short_name": "Outbox PWA",
-  "description": "PWA de incidencias con IndexedDB, patrón Outbox y Background Sync",
+  "name": "Reportes de campo",
+  "short_name": "Reportes",
+  "description": "Registro de incidencias en campo",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#f3f6f4",
-  "theme_color": "#1a5f4a",
+  "background_color": "#FAFAF8",
+  "theme_color": "#353E4D",
   "lang": "es",
   "icons": [
     {
